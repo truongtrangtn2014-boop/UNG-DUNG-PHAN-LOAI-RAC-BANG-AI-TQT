@@ -21,38 +21,44 @@
       border-radius: 10px;
       width: 320px; height: 240px;
       overflow: hidden;
+      background: #000;
     }
-    input {
-      padding: 6px; margin: 5px;
-      border: 1px solid #aaa;
-      border-radius: 5px;
-      width: 150px;
-      text-align: center;
+    video {
+      width: 320px; height: 240px;
+      object-fit: cover;
+      transform: scaleX(-1); /* lật gương cho dễ nhìn */
+    }
+    input, button {
+      margin: 6px;
+      padding: 8px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
     }
     button {
-      background: #4caf50; color: white;
-      border: none; padding: 10px 20px;
-      border-radius: 6px; cursor: pointer;
-      font-size: 16px;
+      background: #4caf50;
+      color: white;
+      border: none;
+      cursor: pointer;
     }
     button:hover { background: #43a047; }
     #result {
-      margin-top: 15px; font-size: 18px;
-      background: #e8f5e9; border-radius: 10px;
-      padding: 10px; display: inline-block;
+      margin-top: 15px;
+      font-size: 18px;
+      background: #e8f5e9;
+      border-radius: 10px;
+      padding: 10px;
+      display: inline-block;
     }
-    #footer { margin-top: 25px; font-size: 14px; color: #777; }
   </style>
 </head>
 
 <body>
   <h2>♻️ ỨNG DỤNG PHÂN LOẠI RÁC BẰNG AI</h2>
-
   <label for="classCode">Nhập mã lớp:</label>
   <input type="text" id="classCode" placeholder="VD: 10A1" />
 
   <div id="camera-container">
-    <video id="webcam" autoplay playsinline width="320" height="240"></video>
+    <video id="webcam" autoplay playsinline muted></video>
   </div>
 
   <button id="startBtn">Bắt đầu nhận diện</button>
@@ -62,4 +68,52 @@
     <p><strong>Độ chính xác:</strong> <span id="confidence">---</span></p>
   </div>
 
-  <div id=
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.20.0"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@0.8/dist/teachablemachine-image.min.js"></script>
+
+  <script>
+    const URL = "model/";
+    let model;
+
+    async function init() {
+      const modelURL = URL + "model.json";
+      const metadataURL = URL + "metadata.json";
+      model = await tmImage.load(modelURL, metadataURL);
+
+      const video = document.getElementById("webcam");
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: { ideal: "environment" } },
+          audio: false
+        });
+        video.srcObject = stream;
+        await video.play();
+        loop();
+      } catch (err) {
+        alert("Không thể truy cập camera. Hãy kiểm tra quyền camera hoặc HTTPS.\n\nChi tiết: " + err.message);
+      }
+    }
+
+    async function loop() {
+      await predict();
+      requestAnimationFrame(loop);
+    }
+
+    async function predict() {
+      const video = document.getElementById("webcam");
+      if (!model) return;
+      const prediction = await model.predict(video);
+
+      let best = prediction[0];
+      for (let i = 1; i < prediction.length; i++) {
+        if (prediction[i].probability > best.probability) best = prediction[i];
+      }
+
+      document.getElementById("label").innerText = best.className;
+      document.getElementById("confidence").innerText = (best.probability * 100).toFixed(2) + "%";
+    }
+
+    document.getElementById("startBtn").addEventListener("click", init);
+  </script>
+</body>
+</html>
