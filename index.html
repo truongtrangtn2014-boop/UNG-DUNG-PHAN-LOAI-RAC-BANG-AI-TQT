@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Phân loại rác bằng AI</title>
 
-  <!-- CSS -->
+  <!-- Liên kết CSS để làm đẹp -->
   <style>
     body {
       font-family: "Arial", sans-serif;
@@ -87,12 +87,16 @@
   </div>
 
   <div id="footer">
-    <p>Made by học sinh THPT TRẦN QUỐC TUẤN - Dự án “Lớp học xanh” 🌿</p>
+    <p>Made by học sinh THPT TRẦN QUỐC TUẤN- Dự án “Lớp học xanh” 🌿</p>
   </div>
 
   <!-- Thư viện TensorFlow.js và Teachable Machine -->
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.20.0"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@0.8/dist/teachablemachine-image.min.js"></script>
+<script>
+  if (location.protocol !== "https:") {
+    location.replace("https://" + location.href.split("//")[1]);
+  }
+</script>  <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@0.8/dist/teachablemachine-image.min.js"></script>
 
   <!-- Code chính -->
   <script>
@@ -106,18 +110,17 @@
       model = await tmImage.load(modelURL, metadataURL);
       maxPredictions = model.getTotalClasses();
 
-      // 2. Mở camera (ưu tiên camera sau trên điện thoại)
+      // 2. Mở camera
       const flip = true; // lật hình cho giống gương
       webcam = new tmImage.Webcam(320, 240, flip);
-      try {
-        await webcam.setup({ facingMode: "environment" }); // dùng camera sau
-        await webcam.play();
-        window.requestAnimationFrame(loop);
-        document.getElementById("camera-container").appendChild(webcam.canvas);
-      } catch (err) {
-        alert("Không thể truy cập camera. Hãy kiểm tra quyền camera hoặc HTTPS.");
-        console.error("Lỗi camera:", err);
-      }
+try {
+  await webcam.setup({ facingMode: "environment" }); // dùng camera sau
+  await webcam.play();
+} catch (err) {
+  alert("Không thể truy cập camera. Hãy kiểm tra quyền camera hoặc HTTPS.");
+  console.error("Lỗi camera:", err);
+}      window.requestAnimationFrame(loop);
+      document.getElementById("camera-container").appendChild(webcam.canvas);
     }
 
     async function loop() {
@@ -142,7 +145,7 @@
       document.getElementById("confidence").innerText =
         (best.probability * 100).toFixed(2) + "%";
 
-      // Chuẩn bị dữ liệu gửi lên Google Sheets (chưa kích hoạt)
+      // Chuẩn bị dữ liệu để gửi lên Google Sheets (Bước 4)
       const classCode = document.getElementById("classCode").value.trim();
       if (classCode && best.probability > 0.9) {
         const data = {
@@ -152,7 +155,7 @@
           time: new Date().toLocaleString("vi-VN"),
         };
         console.log("📤 Dữ liệu sẽ gửi:", data);
-        // Sau này sẽ thêm hàm sendToSheet(data)
+        // Sau này ta sẽ viết hàm sendToSheet(data)
       }
     }
 
