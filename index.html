@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Phân loại rác bằng AI</title>
 
-  <!-- Liên kết CSS để làm đẹp -->
   <style>
     body {
       font-family: "Arial", sans-serif;
@@ -15,57 +14,34 @@
       margin: 0;
       padding: 20px;
     }
-
-    h2 {
-      color: #2e7d32;
-    }
-
+    h2 { color: #2e7d32; }
     #camera-container {
       margin: 15px auto;
       border: 2px solid #4caf50;
       border-radius: 10px;
-      width: 320px;
-      height: 240px;
+      width: 320px; height: 240px;
       overflow: hidden;
     }
-
     input {
-      padding: 6px;
-      margin: 5px;
+      padding: 6px; margin: 5px;
       border: 1px solid #aaa;
       border-radius: 5px;
       width: 150px;
       text-align: center;
     }
-
     button {
-      background: #4caf50;
-      color: white;
-      border: none;
-      padding: 10px 20px;
-      border-radius: 6px;
-      cursor: pointer;
+      background: #4caf50; color: white;
+      border: none; padding: 10px 20px;
+      border-radius: 6px; cursor: pointer;
       font-size: 16px;
     }
-
-    button:hover {
-      background: #43a047;
-    }
-
+    button:hover { background: #43a047; }
     #result {
-      margin-top: 15px;
-      font-size: 18px;
-      background: #e8f5e9;
-      border-radius: 10px;
-      padding: 10px;
-      display: inline-block;
+      margin-top: 15px; font-size: 18px;
+      background: #e8f5e9; border-radius: 10px;
+      padding: 10px; display: inline-block;
     }
-
-    #footer {
-      margin-top: 25px;
-      font-size: 14px;
-      color: #777;
-    }
+    #footer { margin-top: 25px; font-size: 14px; color: #777; }
   </style>
 </head>
 
@@ -86,80 +62,4 @@
     <p><strong>Độ chính xác:</strong> <span id="confidence">---</span></p>
   </div>
 
-  <div id="footer">
-    <p>Made by học sinh THPT TRẦN QUỐC TUẤN- Dự án “Lớp học xanh” 🌿</p>
-  </div>
-
-  <!-- Thư viện TensorFlow.js và Teachable Machine -->
-  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.20.0"></script>
-<script>
-  if (location.protocol !== "https:") {
-    location.replace("https://" + location.href.split("//")[1]);
-  }
-</script>  <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@0.8/dist/teachablemachine-image.min.js"></script>
-
-  <!-- Code chính -->
-  <script>
-    const URL = "model/"; // Thư mục chứa model bạn tải từ Teachable Machine
-    let model, webcam, maxPredictions;
-
-    async function init() {
-      // 1. Tải mô hình đã huấn luyện
-      const modelURL = URL + "model.json";
-      const metadataURL = URL + "metadata.json";
-      model = await tmImage.load(modelURL, metadataURL);
-      maxPredictions = model.getTotalClasses();
-
-      // 2. Mở camera
-      const flip = true; // lật hình cho giống gương
-      webcam = new tmImage.Webcam(320, 240, flip);
-try {
-  await webcam.setup({ facingMode: "environment" }); // dùng camera sau
-  await webcam.play();
-} catch (err) {
-  alert("Không thể truy cập camera. Hãy kiểm tra quyền camera hoặc HTTPS.");
-  console.error("Lỗi camera:", err);
-}      window.requestAnimationFrame(loop);
-      document.getElementById("camera-container").appendChild(webcam.canvas);
-    }
-
-    async function loop() {
-      webcam.update();
-      await predict();
-      window.requestAnimationFrame(loop);
-    }
-
-    async function predict() {
-      const prediction = await model.predict(webcam.canvas);
-
-      // Tìm lớp có xác suất cao nhất
-      let best = prediction[0];
-      for (let i = 1; i < prediction.length; i++) {
-        if (prediction[i].probability > best.probability) {
-          best = prediction[i];
-        }
-      }
-
-      // Hiển thị kết quả
-      document.getElementById("label").innerText = best.className;
-      document.getElementById("confidence").innerText =
-        (best.probability * 100).toFixed(2) + "%";
-
-      // Chuẩn bị dữ liệu để gửi lên Google Sheets (Bước 4)
-      const classCode = document.getElementById("classCode").value.trim();
-      if (classCode && best.probability > 0.9) {
-        const data = {
-          class: classCode,
-          trashType: best.className,
-          confidence: best.probability,
-          time: new Date().toLocaleString("vi-VN"),
-        };
-        console.log("📤 Dữ liệu sẽ gửi:", data);
-        // Sau này ta sẽ viết hàm sendToSheet(data)
-      }
-    }
-
-    document.getElementById("startBtn").addEventListener("click", init);
-  </script>
-</body>
-</html>
+  <div id=
