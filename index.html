@@ -26,7 +26,7 @@
     video {
       width: 320px; height: 240px;
       object-fit: cover;
-      transform: scaleX(-1); /* lật gương cho dễ nhìn */
+      transform: scaleX(-1);
     }
     input, button {
       margin: 6px;
@@ -67,10 +67,12 @@
     <p><strong>Loại rác:</strong> <span id="label">---</span></p>
     <p><strong>Độ chính xác:</strong> <span id="confidence">---</span></p>
   </div>
+
   <div id="footer">
-    <p>Made by học sinh THPT TRẦN QUỐC TUẤN- Dự án “Lớp học xanh” 🌿</p>
+    <p>Made by học sinh THPT TRẦN QUỐC TUẤN – Dự án “Lớp học xanh” 🌿</p>
   </div>
 
+  <!-- Thư viện AI -->
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.20.0"></script>
   <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@0.8/dist/teachablemachine-image.min.js"></script>
 
@@ -114,6 +116,35 @@
 
       document.getElementById("label").innerText = best.className;
       document.getElementById("confidence").innerText = (best.probability * 100).toFixed(2) + "%";
+
+      // Gửi dữ liệu lên Google Sheets nếu chính xác > 90%
+      const classCode = document.getElementById("classCode").value.trim();
+      if (classCode && best.probability > 0.9) {
+        const data = {
+          class: classCode,
+          trashType: best.className,
+          confidence: best.probability,
+          time: new Date().toLocaleString("vi-VN")
+        };
+        console.log("📤 Dữ liệu sẽ gửi:", data);
+        sendToSheet(data); // 🔹 gọi hàm gửi dữ liệu
+      }
+    }
+
+    // 🧩 Hàm gửi dữ liệu đến Google Sheet
+    async function sendToSheet(data) {
+      const SHEET_URL = https://script.google.com/macros/s/AKfycbyTRn6kvfPDy6l4j1PnWZISfo8GfzvqWnynrx-qlpPEI3onJiLGq4GQ_h1ac6zctS1y/exec
+      try {
+        await fetch(SHEET_URL, {
+          method: "POST",
+          mode: "no-cors",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data)
+        });
+        console.log("✅ Gửi dữ liệu thành công!");
+      } catch (error) {
+        console.error("❌ Lỗi gửi dữ liệu:", error);
+      }
     }
 
     document.getElementById("startBtn").addEventListener("click", init);
