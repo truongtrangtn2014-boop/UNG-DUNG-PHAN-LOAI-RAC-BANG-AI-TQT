@@ -26,7 +26,7 @@
     video {
       width: 320px; height: 240px;
       object-fit: cover;
-      transform: scaleX(-1); /* lật gương cho dễ nhìn */
+      transform: scaleX(-1);
     }
     input, button {
       margin: 6px;
@@ -67,10 +67,12 @@
     <p><strong>Loại rác:</strong> <span id="label">---</span></p>
     <p><strong>Độ chính xác:</strong> <span id="confidence">---</span></p>
   </div>
+
   <div id="footer">
-    <p>Made by học sinh THPT TRẦN QUỐC TUẤN- Dự án “Lớp học xanh” 🌿</p>
+    <p>Made by học sinh THPT TRẦN QUỐC TUẤN – Dự án “Lớp học xanh” 🌿</p>
   </div>
 
+  <!-- Thư viện AI -->
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.20.0"></script>
   <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@0.8/dist/teachablemachine-image.min.js"></script>
 
@@ -114,9 +116,91 @@
 
       document.getElementById("label").innerText = best.className;
       document.getElementById("confidence").innerText = (best.probability * 100).toFixed(2) + "%";
+
+      // Gửi dữ liệu lên Google Sheets nếu chính xác > 90%
+      const classCode = document.getElementById("classCode").value.trim();
+      if (classCode && best.probability > 0.9) {
+        const data = {
+          class: classCode,
+          trashType: best.className,
+          confidence: best.probability,
+          time: new Date().toLocaleString("vi-VN")
+        };
+        console.log("📤 Dữ liệu sẽ gửi:", data);
+        sendToSheet(data); // 🔹 gọi hàm gửi dữ liệu
+      }
     }
 
-    document.getElementById("startBtn").addEventListener("click", init);
-  </script>
-</body>
-</html>
+    // 🧩 Hàm gửi dữ liệu đến Google Sheet
+<script>
+  const URL = "./model/";
+  const SCRIPT_URL = " https://script.google.com/macros/s/AKfycbwXG8fvFTcqLTxEZsfXv_FSBPqi72myttV5R-12C16-Ve1OhA3cZEPM0nfNBRHSO2Zv/exec"; // <-- dán URL của bạn
+
+  let model, webcam, maxPredictions;
+
+  async function init() {
+    model = await tmImage.load(URL + "model.json", URL + "metadata.json");
+    maxPredictions = model.getTotalClasses();
+
+    const flip = true;
+    webcam = new tmImage.Webcam(400, 400, flip);
+    await webcam.setup();
+    await webcam.play();
+    window.requestAnimationFrame(loop);
+    document.getElementById("webcam").srcObject = webcam.webcam.stream;
+  }
+
+  async function loop() {
+    webcam.update();
+    await predict();
+    window.requestAnimationFrame(loop);
+  }
+
+  async function predict() {
+    const prediction = await model.predict(webcam.canvas);
+    let bestClass = "";
+    let bestProb = 0;
+
+    prediction.forEach(p => {
+      if (p.probability > bestProb) {
+        bestProb = p.probability;
+        bestClass = p.className;
+      }
+    });
+
+    const resultDiv = document.getElementById("result");
+    let className = "11A1"; // 👈 bạn có thể thay lớp tùy người dùng
+    let trashType = "";
+    let points = 0;
+
+    if (bestProb > 0.8) {
+      if (bestClass.includes("tái chế")) {
+        trashType = "Tái chế"; points = 5;
+        resultDiv.innerHTML = "✅ Rác tái chế – Cộng 5 điểm cho lớp " + className + "!";
+      } else if (bestClass.includes("hữu cơ")) {
+        trashType = "Hữu cơ"; points = 3;
+        resultDiv.innerHTML = "🍌 Rác hữu cơ – Cộng 3 điểm cho lớp " + className + "!";
+      } else {
+        trashType = "Vô cơ"; points = 2;
+        resultDiv.innerHTML = "🧱 Rác vô cơ – Cộng 2 điểm cho lớp " + className + "!";
+      }
+
+      // ✨ Gửi dữ liệu lên Google Sheets
+      fetch(SCRIPT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ className, trashType, points })
+      })
+      .then(res => console.log("Đã gửi thành công:", res))
+      .catch(err => console.error("Lỗi gửi:", err));
+
+    } else {
+      resultDiv.innerHTML = "🤔 Đang nhận diện...";
+    }
+  }
+
+  document.getElementById("startButton").addEventListener("click", () => {
+    init();
+  });
+</script>
+
