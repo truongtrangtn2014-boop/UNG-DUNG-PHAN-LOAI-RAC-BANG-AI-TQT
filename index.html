@@ -26,7 +26,7 @@
     video {
       width: 320px; height: 240px;
       object-fit: cover;
-      transform: scaleX(-1); /* lật gương cho dễ nhìn */
+      transform: scaleX(-1); /* lật gương */
     }
     input, button {
       margin: 6px;
@@ -49,6 +49,13 @@
       padding: 10px;
       display: inline-block;
     }
+    #status {
+      margin-top: 10px;
+      font-size: 16px;
+      color: #2e7d32;
+      font-weight: bold;
+      transition: opacity 0.5s ease;
+    }
   </style>
 </head>
 
@@ -62,6 +69,9 @@
   </div>
 
   <button id="startBtn">Bắt đầu nhận diện</button>
+
+  <!-- ✅ Thông báo gửi dữ liệu -->
+  <div id="status"></div>
 
   <div id="result">
     <p><strong>Loại rác:</strong> <span id="label">---</span></p>
@@ -80,6 +90,7 @@
     const URL = "model/";
     const SHEET_URL = "https://script.google.com/macros/s/AKfycbydCbehXdiiv468ltFP8G5IuNheej0m1N5pW6_VLIGub6wMMLTORCAbNIzNruw3n5sujw/exec";
     let model;
+    let canSend = true;
 
     async function init() {
       const modelURL = URL + "model.json";
@@ -110,19 +121,17 @@
       const video = document.getElementById("webcam");
       const prediction = await model.predict(video);
 
-      // Tìm loại rác có xác suất cao nhất
       let best = prediction[0];
       for (let i = 1; i < prediction.length; i++) {
         if (prediction[i].probability > best.probability) best = prediction[i];
       }
 
-      // Hiển thị kết quả
       document.getElementById("label").innerText = best.className;
       document.getElementById("confidence").innerText = (best.probability * 100).toFixed(2) + "%";
 
-      // Nếu độ chính xác > 90%, gửi dữ liệu lên Google Sheet
       const classCode = document.getElementById("classCode").value.trim();
-      if (classCode && best.probability > 0.9) {
+      if (classCode && best.probability > 0.9 && canSend) {
+        canSend = false;
         const data = {
           class: classCode,
           trashType: best.className,
@@ -130,6 +139,7 @@
           time: new Date().toLocaleString("vi-VN")
         };
         sendToSheet(data);
+        setTimeout(() => { canSend = true; }, 5000);
       }
     }
 
@@ -142,9 +152,21 @@
           body: JSON.stringify(data)
         });
         console.log("✅ Dữ liệu đã gửi:", data);
+        showStatus("✅ Đã ghi dữ liệu lên bảng!");
       } catch (error) {
         console.error("❌ Lỗi gửi dữ liệu:", error);
+        showStatus("⚠️ Lỗi gửi dữ liệu!");
       }
+    }
+
+    // ✅ Hiển thị thông báo trạng thái (ẩn sau 3 giây)
+    function showStatus(message) {
+      const statusDiv = document.getElementById("status");
+      statusDiv.textContent = message;
+      statusDiv.style.opacity = 1;
+      setTimeout(() => {
+        statusDiv.style.opacity = 0;
+      }, 3000);
     }
 
     document.getElementById("startBtn").addEventListener("click", init);
