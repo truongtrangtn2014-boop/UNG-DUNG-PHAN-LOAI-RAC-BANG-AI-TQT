@@ -26,7 +26,7 @@
     video {
       width: 320px; height: 240px;
       object-fit: cover;
-      transform: scaleX(-1);
+      transform: scaleX(-1); /* lật gương cho dễ nhìn */
     }
     input, button {
       margin: 6px;
@@ -49,28 +49,6 @@
       padding: 10px;
       display: inline-block;
     }
-    #ranking {
-      margin-top: 25px;
-      text-align: center;
-      background: #ffffff;
-      border-radius: 10px;
-      padding: 10px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-      width: 340px;
-      display: inline-block;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-    }
-    th, td {
-      border-bottom: 1px solid #ddd;
-      padding: 6px;
-    }
-    th {
-      background: #4caf50;
-      color: white;
-    }
   </style>
 </head>
 
@@ -90,14 +68,6 @@
     <p><strong>Độ chính xác:</strong> <span id="confidence">---</span></p>
   </div>
 
-  <div id="ranking">
-    <h3>🏆 BẢNG XẾP HẠNG “LỚP XANH”</h3>
-    <table id="rankTable">
-      <thead><tr><th>Lớp</th><th>Tổng điểm</th></tr></thead>
-      <tbody><tr><td colspan="2">Đang tải...</td></tr></tbody>
-    </table>
-  </div>
-
   <div id="footer">
     <p>Made by học sinh THPT TRẦN QUỐC TUẤN – Dự án “Lớp học xanh” 🌿</p>
   </div>
@@ -108,7 +78,7 @@
 
   <script>
     const URL = "model/";
-    const SHEET_URL = "https://script.google.com/macros/s/AKfycbyTRn6kvfPDy6l4j1PnWZISfo8GfzvqWnynrx-qlpPEI3onJiLGq4GQ_h1ac6zctS1y/exec";
+    const SHEET_URL = "https://script.google.com/macros/s/AKfycbzNlQqguayG0V1TUXw60803R3mMtSlDXYKYhcQtVvoC1xnlZS93V-xCI5YyYEMb9ws/exec";
     let model;
 
     async function init() {
@@ -126,7 +96,7 @@
         await video.play();
         loop();
       } catch (err) {
-        alert("Không thể truy cập camera. Hãy kiểm tra quyền camera hoặc HTTPS.\n\nChi tiết: " + err.message);
+        alert("❌ Không thể truy cập camera.\nHãy kiểm tra quyền camera hoặc đảm bảo chạy qua HTTPS.\n\nChi tiết: " + err.message);
       }
     }
 
@@ -136,37 +106,33 @@
     }
 
     async function predict() {
-      const video = document.getElementById("webcam");
       if (!model) return;
+      const video = document.getElementById("webcam");
       const prediction = await model.predict(video);
 
+      // Tìm loại rác có xác suất cao nhất
       let best = prediction[0];
       for (let i = 1; i < prediction.length; i++) {
         if (prediction[i].probability > best.probability) best = prediction[i];
       }
 
+      // Hiển thị kết quả
       document.getElementById("label").innerText = best.className;
       document.getElementById("confidence").innerText = (best.probability * 100).toFixed(2) + "%";
 
-      // Gửi dữ liệu lên Google Sheets nếu chính xác > 90%
+      // Nếu độ chính xác > 90%, gửi dữ liệu lên Google Sheet
       const classCode = document.getElementById("classCode").value.trim();
       if (classCode && best.probability > 0.9) {
-        const score = best.className === "Tái chế" ? 5 :
-                      best.className === "Hữu cơ" ? 3 : 1;
-
         const data = {
           class: classCode,
           trashType: best.className,
           confidence: best.probability,
-          score: score,
           time: new Date().toLocaleString("vi-VN")
         };
-        console.log("📤 Dữ liệu gửi:", data);
         sendToSheet(data);
       }
     }
 
-    // Gửi dữ liệu tới Google Sheet
     async function sendToSheet(data) {
       try {
         await fetch(SHEET_URL, {
@@ -175,32 +141,13 @@
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(data)
         });
-        console.log("✅ Gửi dữ liệu thành công!");
-        loadRanking(); // cập nhật bảng xếp hạng sau khi gửi
+        console.log("✅ Dữ liệu đã gửi:", data);
       } catch (error) {
         console.error("❌ Lỗi gửi dữ liệu:", error);
       }
     }
 
-    // Hàm tải bảng xếp hạng từ Google Sheets
-    async function loadRanking() {
-      try {
-        const response = await fetch(https://script.google.com/macros/s/AKfycbyI27Tv5DrmaHFgmLndXa8laRaxuHO_Xrx3yUMngvsdPPu5CQQ0Mwtc8c7F1HXc9BLD/exec+ "?action=getRanking");
-        const ranking = await response.json();
-        const tbody = document.querySelector("#rankTable tbody");
-        tbody.innerHTML = "";
-        ranking.forEach(row => {
-          const tr = document.createElement("tr");
-          tr.innerHTML = `<td>${row.class}</td><td>${row.total}</td>`;
-          tbody.appendChild(tr);
-        });
-      } catch (err) {
-        console.error("Lỗi tải bảng xếp hạng:", err);
-      }
-    }
-
     document.getElementById("startBtn").addEventListener("click", init);
-    window.onload = loadRanking;
   </script>
 </body>
 </html>
